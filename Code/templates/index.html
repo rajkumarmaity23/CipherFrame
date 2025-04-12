@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sender-Receiver Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #eee;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 40px;
+        }
+        .box {
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            width: 400px;
+        }
+        .sender {
+            background-color: #b3733c;
+        }
+        .receiver {
+            background-color: #3c92a8;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid black;
+            background: rgba(255,255,255,0.2);
+        }
+        label {
+            display: block;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 20px 0 10px;
+            padding: 10px;
+            border: 1px solid black;
+            text-align: center;
+            background: rgba(255,255,255,0.2);
+        }
+        input[type="text"], input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        #output_image, #generated_image {
+            display: none;
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+        #download-btn {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
+            background: #000;
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box sender">
+        <h2>Sender</h2>
+        <label>Enter Text</label>
+        <input type="text" id="textinput" placeholder="Type here...">
+        <button class="submit-btn" onclick="sendText()">Submit</button>
+        <img id="generated_image" alt="Generated Image">
+        <a id="download-btn" href="#" download style="display:none;">Download Image</a>
+    </div>
+
+    <div class="box receiver">
+        <h2>Receiver</h2>
+        <label>Upload Image</label>
+        <input type="file" accept="image/*" onchange="previewImage(event)" id="imageInput">
+        <button class="submit-btn" onclick="sendImage()">Submit</button>
+        <img id="output_image" alt="Image Preview">
+        <div id="decoded-text" style="margin-top: 20px; font-size: 18px; color: white;"></div>
+    </div>
+
+    <script>
+        function sendText() {
+            var text = document.getElementById("textinput").value;
+            fetch('/text_to_image', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ textinput: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const imgElement = document.getElementById("generated_image");
+                imgElement.src = data.processed_img;
+                imgElement.style.display = 'block';
+
+                const downloadLink = document.getElementById("download-btn");
+                downloadLink.href = data.processed_img;
+                downloadLink.style.display = 'block';
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function(){
+                var output = document.getElementById('output_image');
+                output.src = reader.result;
+                output.style.display = 'block';
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function sendImage() {
+            var fileInput = document.getElementById('imageInput');
+            var formData = new FormData();
+            formData.append("imageInput", fileInput.files[0]);
+
+            fetch('/image_to_text', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const decodedTextDiv = document.getElementById("decoded-text");
+                decodedTextDiv.innerHTML = "<b>Decoded Text:</b> " + data.result;
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+
+</body>
+</html>
